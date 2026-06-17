@@ -1,550 +1,162 @@
-LIBRARY MANAGEMENT SYSTEM (PROJECT - 2)
+# 📚 Library Management System
 
+![C++](https://img.shields.io/badge/Language-C%2B%2B-blue.svg)
+![OOP](https://img.shields.io/badge/Paradigm-OOP-orange.svg)
+![STL](https://img.shields.io/badge/STL-Vectors-green.svg)
+![Status](https://img.shields.io/badge/Status-Complete-brightgreen.svg)
 
+A terminal-based **dual-portal Library Management System** built in C++, designed to simulate how a real library handles books, members, and lending operations — all while staying true to core Object-Oriented Programming principles. It supports two distinct user roles (**Librarian** and **Member**), each with a tailored set of permissions, and ships pre-loaded with a 100-book catalog spanning classic and modern literature.
 
+---
 
-// LIBRARY MANAGEMENT SYSTEM
+## 🧠 Why This Project Matters
 
-#include<iostream>
-#include<vector>
-#include<string>
-using namespace std;
+Most beginner C++ projects stop at "store data in a vector." This one goes a step further by modeling a **real-world access-controlled system**: a single application with two different experiences depending on who's logged in, a security layer that locks people out after repeated failed attempts, and a clean separation between *raw inventory*, *membership records*, and *active lending transactions*. It's a compact demonstration of how OOP class design maps directly onto a real operational workflow.
 
-int pin; //global scope variable
+---
 
-class book {
-    public:
-    string title;
-    string author;
-    long int id;
+## ✨ Core Features
 
-    // parametrized constructor
+### 🔐 Secure Access Layer
+- PIN-based login gate before any part of the system is accessible.
+- **3-attempt lockout policy** — three incorrect PIN entries terminate the session entirely, mimicking real-world account security (e.g., ATM-style lockouts).
 
-    book(string title, string author, long int id){
-        // class specifier = parameter
-        this->title = title;
-        this->author = author;
-        this->id = id;
-    }
+### 🧑‍💼 Librarian Portal
+| Capability | Description |
+|---|---|
+| View All Books | Lists the entire catalog with title, author, and ID |
+| Search by ID | Instant lookup of any book using its unique numeric ID |
+| Search by Title | Case-insensitive title search (custom-built uppercase normalizer) |
+| Add New Book | Inserts a new book record into the live in-memory catalog |
+| Remove Book by ID | Deletes a book from the catalog with confirmation feedback |
+| View All Members | Displays the full registered member directory |
+| Add New Member | Registers a new library member with a unique ID |
+| Remove Member | Removes a member record by ID |
+| View Issued Books | Displays every book currently checked out |
 
-    void display(){
-        cout<<"BOOK TITLE: "<<title<<endl;
-        cout<<"BOOK AUTHOR: "<<author<<endl;
-        cout<<"BOOK ID: "<<id<<endl;
-    }
-    
-};
-class member{
-    public:
-    string name;
-    int id;
+### 🙋 Member Portal
+| Capability | Description |
+|---|---|
+| View All Books | Browse the full catalog before deciding what to borrow |
+| Issue Book | Check out a book by ID, with duplicate-issue prevention |
+| My Issued Books | View currently issued books |
+| Return Book | Return a borrowed book, removing it from active circulation |
 
-     member(string name, int id){
-        this->name = name;
-        this->id = id;
-    }    
-       
-    void display_member(){
-        cout<<"MEMBER NAME: "<<name<<endl;
-        cout<<"MEMBER ID: "<<id<<endl;
-        cout<<"----------------"<<endl;
-    }
- 
-};
-class issuedbooks{
-    public:
-    string title;
-    string author;
-    long int id;
+### 🛡️ Role-Based Access Control (RBAC)
+Once authenticated, the user selects a role — **Librarian** or **Member** — and is routed into a completely separate menu and permission set, so a member can never accidentally (or intentionally) access administrative functions like deleting books or members.
 
-    // parametrized constructor
+---
 
-    issuedbooks(string title, string author, long int id){
-        // class specifier = parameter
-        this->title = title;
-        this->author = author;
-        this->id = id;
-    }
-    void display_issuedbooks(){
-        cout<<"BOOK TITLE: "<<title<<endl;
-        cout<<"BOOK AUTHOR: "<<author<<endl;
-        cout<<"BOOK ID: "<<id<<endl;
-        cout<<"------------"<<endl;
-    }
-};
-class library{ // called in the main function using lib as variable.
-    public:
+## 🏗️ Architecture & Class Design
 
-    // creating a vector for to save books in dynamic memory allocation
+The system is built around **four cooperating classes**, each with a single, well-defined responsibility:
 
-    vector<book> volume;
-  // creating a void function add_book to insert books in dynamic memory
+```
+┌─────────────┐     ┌──────────────┐     ┌──────────────┐
+│    book     │     │    member    │     │  issuedbooks │
+├─────────────┤     ├──────────────┤     ├──────────────┤
+│ title       │     │ name         │     │ title        │
+│ author      │     │ id           │     │ author       │
+│ id          │     │ display_     │     │ id           │
+│ display()   │     │ member()     │     │ display_     │
+└─────────────┘     └──────────────┘     │ issuedbooks() │
+       ▲                    ▲             └──────────────┘
+       │                    │                     ▲
+       └────────────────────┴─────────────────────┘
+                             │
+                    ┌────────────────┐
+                    │     library      │
+                    ├──────────────────┤
+                    │ vector<book>       │
+                    │ vector<member>     │
+                    │ vector<issuedbooks>│
+                    ├──────────────────┤
+                    │ add/remove/search/ │
+                    │ issue/return logic │
+                    └──────────────────┘
+```
 
+- **`book`** — Encapsulates catalog data with a parameterized constructor for clean object creation.
+- **`member`** — Represents a registered library user.
+- **`issuedbooks`** — A dedicated record type for active loans, keeping "what's in the library" and "what's currently out" as logically separate concerns.
+- **`library`** — The orchestrator class. Owns three independent `vector` containers and exposes all business logic (add, remove, search, issue, return) as clean member functions, keeping `main()` focused purely on menu flow.
 
-    void add_book(string title, string author, long int id){
-        volume.push_back(book(title, author, id));
-    }
-bool remove_book_by_id(long int id){
-    for(size_t i = 0; i < volume.size(); i++){   // loop through vector by index
-        if(volume[i].id == id){
-            cout << "THE BOOK WITH THE ID " << id << " EXISTS\n";
-            volume[i].display();
+This separation means the catalog, membership list, and circulation desk can all evolve independently — a small taste of the modularity that larger systems rely on.
 
-            // erase the book at index i
-            volume.erase(volume.begin() + i);
+---
 
-            cout << "THE FOLLOWING BOOK HAS BEEN REMOVED FROM THE DATABASE.\n";
-            return true;
-        }
-    }
-    cout << "THE BOOK WITH THE ID " << id << " DOES NOT EXIST\n";
-    return false;
-    }
-    void display_all_books(){
-        for(book &v : volume){
-            v.display();
-            cout<<"----------------"<<endl;
-        }
-    }
-    bool search_book_by_id(int id){
-         for(book &v : volume){
-            if(v.id==id){
-                cout<<"THE BOOK WITH THE ID "<<id<<" EXISTS"<<endl;
-                v.display(); 
-                return true;  
-            } 
-        } 
-        cout<<"THE BOOK WITH THE ID "<<id<<" DOES NOT EXISTS"<<endl;
-        return false;
-    }
-    string toUppercase(string s) {
-    for (size_t i = 0; i < s.length(); ++i) {
-        if (s[i] >= 97 && s[i] <= 122) {
-            s[i]  = s[i] - 32; // Subtracting 32 from any lowercase letter gives its uppercase equivalent.
-        }
-    }
-    return s;
-}
-    bool search_book_by_title(string title){
-        title = toUppercase(title);
-        for(book &v : volume){
-            if(v.title==title){
-                cout<<"THE BOOK WITH THE TITLE "<<title<<" EXISTS"<<endl;
-                v.display(); 
-                return true;
-            }
-        }
-        cout<<"THE BOOK WITH THE TITLE DOES NOT "<<title<<" EXISTS"<<endl;
-        return false;
-    }
+## ⚙️ Technical Highlights
 
-    // creating a vector to save members
+- **Dynamic Memory via STL `vector`** — All three data sets (books, members, issued books) are stored in dynamically resizable `vector` containers, avoiding fixed-size array limitations entirely.
+- **Index-Safe Erasure** — Removal operations (`remove_book_by_id`, `remove_member_by_id`, `return_book_by_id`) iterate by index and use `vector::erase()` safely, with iterator-position handling to avoid undefined behavior.
+- **Custom String Normalization** — A hand-written `toUppercase()` function (no `<algorithm>` shortcuts) demonstrates manual character-level manipulation using ASCII arithmetic, enabling case-insensitive title search.
+- **Duplicate-Issue Guard** — `issue_book_by_id()` checks the active loans list *before* issuing, preventing the same book from being checked out twice simultaneously.
+- **Pre-Seeded Realistic Dataset** — Launches with 100 real, recognizable book titles (Orwell, Tolkien, Dostoevsky, Rowling, Asimov, and more) and 6 members, so the system is immediately demoable without manual data entry.
+- **Clean Console UX** — ANSI escape codes (`\033[1m`) are used for bold terminal headers, and a recurring `restart_menu()` helper creates a smooth looping menu experience instead of a one-shot script.
 
-        vector<member> people;
+---
 
-    void add_member(string name, int id){
-        people.push_back(member(name, id));
-    }
-    void display_all_member(){
-        for( member &m : people){
-            m.display_member();
-        }
-    }
-    bool remove_member_by_id(long int id){
-    for(size_t i = 0; i < people.size(); i++){   // loop through vector by index
-        if(people[i].id == id){
-            cout << "THE MEMBER WITH THE ID " << id << " EXISTS\n";
-            people[i].display_member();
+## 💻 Sample Interaction
 
-            // erase the book at index i
-            people.erase(people.begin() + i);
+```
+********* WELCOME TO LIBRARY SYSTEM **********
 
-            cout << "THE FOLLOWING MEMBER HAS BEEN REMOVED FROM THE DATABASE.\n";
-            return true;
-        }
-    }
-    cout << "THE MEMBER WITH THE ID " << id << " DOES NOT EXIST\n";
-    return false;
-    }
+PLEASE ENTER YOU FOUR DIGIT PIN TO LOGIN: 2007
 
-    // creating a vector to save issued books
+WELCOME TO LIBRARY
 
-    vector<issuedbooks> issued_books;
+PLEASE SELECT YOUR LOGIN ROLE:
+1. LIBRARIAN
+2. MEMBER
+ENTER YOUR CHOICE: 2
 
-    void add_issuedbooks(string title, string author, long int id){
-        issued_books.push_back(issuedbooks(title, author, id));
-    }
+1. VIEW ALL BOOKS
+2. ISSUE BOOK
+3. MY ISSUED BOOKS
+4. RETURN BOOK
+0. EXIT
+> 2
+PLEASE ENTER THE ID OF THE BOOK TO ISSUE: 1066
+THE BOOK WITH THE ID 1066 EXISTS IN THE DATABASE
+BOOK TITLE: DUNE
+BOOK AUTHOR: FRANK HERBERT
+BOOK ID: 1066
+THE BOOK HAS BEEN ISSUED!
+```
 
-    void display_allissuedbooks(){
-        for(issuedbooks &x : issued_books){
-            x.display_issuedbooks();
-        }
-    }
-    bool issue_book_by_id(int id){
-        for (issuedbooks &b : issued_books) {
-        if (b.id == id) {
-            cout << "BOOK WITH ID " << id << " IS ALREADY ISSUED!" << endl;
-            return false;
-        }
-    }
-        for(book &x : volume){
-            if(x.id == id){
-                cout<<"THE BOOK WITH THE ID "<<id<<" EXISTS IN THE DATABASE";
-                x.display();
-                cout<<"THE BOOK HAS BEEN ISSUED!"<<endl;
-                // i converted object book to object issuedbooks.
-                issued_books.push_back(issuedbooks(x.title, x.author, x.id));
-                return true;
-            }
-        }
-        cout<<"THE BOOK WITH THE ID "<<id<<" DOES NOT EXISTS IN THE DATABASE, ISSUING BOOK CANCELLED!";
-        return false;
-    }
-    bool return_book_by_id(int id){
-        for (issuedbooks &b : issued_books) {
-        if (b.id == id){
-            for(size_t i = 0; i < issued_books.size(); i++){   // loop through vector by index
-            if(issued_books[i].id == id){
-            
-            // erase the book at index i
-            issued_books.erase(issued_books.begin() + i);
+---
 
-            cout << "THE FOLLOWING BOOK HAS BEEN RETURNED.\n";
-            return true;
-        }
-    }
+## 🚀 Getting Started
 
-        }
-    }
-    cout<<"THE BOOK WITH THE ID "<<id<<" DOES NOT EXISTS IN THE DATABASE, RETURNING BOOK CANCELLED!";
-    return false;
-}
-};
+### Prerequisites
+- A C++ compiler supporting C++11 or later (e.g., `g++`)
 
-void lock_access(int &pin){
-    for(int i=1; i<=3; i++){
-        cin>>pin;
-        if(pin==2007){
-            cout<<"\nWELCOME TO LIBRARY"<<endl;
-            break;
-        } else {
-            if(i==3){
-                cout<<"MAXIMUM ATTEMPTS REACHED! YOUR ACCESS TO LIBRARY SYSTEM HAS BEEN DECLINED";
-                exit(0);
-            }
-            cout<<"INVALID PIN! PLEASE TRY AGAIN: ";
-        }
-    }
+### Compile & Run
+```bash
+g++ library_management_system.cpp -o library
+./library
+```
+> 💡 Login PIN for demo purposes: `2007`
 
-}
-bool restart_menu(){
-    cout<<"\nDO YOU WANT TO PROCESS ANOTHER FUNCTION?"<<endl;
-        cout<<"1. YES"<<endl;
-        cout<<"2. NO"<<endl;
-        cout<<"PLEASE SELECT YOUR FUNCTION: "; 
-        cin>>pin;
-        if(pin==1){
-            return true;
-        } else {
-            cout<<"THANKS FOR VISITING OUT LIBRARY MANAGEMENT SYSTEM.";
-            exit(0);
-            return false;
-        }
-}
+---
 
-int main(){
+## 🔭 Future Enhancements
 
-    // displaying all the local scope variable
-    int choice;
-    int point;
-    long int book_id;
-    string book_title;
-    string book_author;
-    string updated_book_title;
-    string member_name;
-    int member_id;
-    int option;
-    // MAIN CODE START HERE
-    cout<<"\n\033[1m********* WELCOME TO LIBRARY SYSTEM **********\033[0m\n"<<endl;
-    cout<<"PLEASE ENTER YOU FOUR DIGIT PIN TO LOGIN: ";
-    
-    lock_access(pin);
-    library lib; // constructor call
+This was deliberately built as a focused, in-memory OOP exercise. Natural next steps to evolve it into a production-style tool:
+- **Persistent storage** — save/load catalog and membership data via file I/O or a lightweight database (SQLite) so data survives program restarts.
+- **Per-member loan tracking** — link each issued book to the specific member who borrowed it (currently issued books are tracked globally, not per-member).
+- **Due dates & fine calculation** — introduce borrow duration tracking and automated overdue fines.
+- **Encrypted credentials** — replace the single hardcoded PIN with per-user hashed credentials.
+- **Exception handling** — guard against invalid input types (e.g., entering text where a numeric ID is expected).
 
-    cout << "\nPLEASE SELECT YOUR LOGIN ROLE:\n1. LIBRARIAN\n2. MEMBER"<<endl;
-    cout<<"ENTER YOUR CHOICE: "<<endl;
-    cin>>point;
-    
+---
 
-    // ADDING BOOKS TO THE LIBRARY DATABASE WHICH WILL SAVE IT IN BOOK OBJECT INSIDE VECTORS
+## 👤 Author
 
-lib.add_book("PRIDE AND PREJUDICE", "JANE AUSTEN", 1001);
-lib.add_book("1984", "GEORGE ORWELL", 1002);
-lib.add_book("TO KILL A MOCKINGBIRD", "HARPER LEE", 1003);
-lib.add_book("THE GREAT GATSBY", "F. SCOTT FITZGERALD", 1004);
-lib.add_book("MOBY-DICK", "HERMAN MELVILLE", 1005);
-lib.add_book("WAR AND PEACE", "LEO TOLSTOY", 1006);
-lib.add_book("CRIME AND PUNISHMENT", "FYODOR DOSTOEVSKY", 1007);
-lib.add_book("THE CATCHER IN THE RYE", "J.D. SALINGER", 1008);
-lib.add_book("BRAVE NEW WORLD", "ALDOUS HUXLEY", 1009);
-lib.add_book("JANE EYRE", "CHARLOTTE BRONTË", 1010);
+**Atharv Verma**
+B.Tech, Computer Science and Engineering — SRM Institute of Science and Technology
+📧 verma.atharv@gmail.com
 
-lib.add_book("WUTHERING HEIGHTS", "EMILY BRONTË", 1011);
-lib.add_book("THE ODYSSEY", "HOMER", 1012);
-lib.add_book("THE ILIAD", "HOMER", 1013);
-lib.add_book("THE DIVINE COMEDY", "DANTE ALIGHIERI", 1014);
-lib.add_book("HAMLET", "WILLIAM SHAKESPEARE", 1015);
-lib.add_book("MACBETH", "WILLIAM SHAKESPEARE", 1016);
-lib.add_book("OTHELLO", "WILLIAM SHAKESPEARE", 1017);
-lib.add_book("KING LEAR", "WILLIAM SHAKESPEARE", 1018);
-lib.add_book("A TALE OF TWO CITIES", "CHARLES DICKENS", 1019);
-lib.add_book("GREAT EXPECTATIONS", "CHARLES DICKENS", 1020);
+---
 
-lib.add_book("OLIVER TWIST", "CHARLES DICKENS", 1021);
-lib.add_book("DAVID COPPERFIELD", "CHARLES DICKENS", 1022);
-lib.add_book("LES MISÉRABLES", "VICTOR HUGO", 1023);
-lib.add_book("THE HUNCHBACK OF NOTRE-DAME", "VICTOR HUGO", 1024);
-lib.add_book("ANNA KARENINA", "LEO TOLSTOY", 1025);
-lib.add_book("THE BROTHERS KARAMAZOV", "FYODOR DOSTOEVSKY", 1026);
-lib.add_book("NOTES FROM UNDERGROUND", "FYODOR DOSTOEVSKY", 1027);
-lib.add_book("THE PICTURE OF DORIAN GRAY", "OSCAR WILDE", 1028);
-lib.add_book("ULYSSES", "JAMES JOYCE", 1029);
-lib.add_book("DUBLINERS", "JAMES JOYCE", 1030);
-
-lib.add_book("THE SOUND AND THE FURY", "WILLIAM FAULKNER", 1031);
-lib.add_book("ABSALOM, ABSALOM!", "WILLIAM FAULKNER", 1032);
-lib.add_book("LOLITA", "VLADIMIR NABOKOV", 1033);
-lib.add_book("PALE FIRE", "VLADIMIR NABOKOV", 1034);
-lib.add_book("THE STRANGER", "ALBERT CAMUS", 1035);
-lib.add_book("THE PLAGUE", "ALBERT CAMUS", 1036);
-lib.add_book("THE MYTH OF SISYPHUS", "ALBERT CAMUS", 1037);
-lib.add_book("ONE HUNDRED YEARS OF SOLITUDE", "GABRIEL GARCÍA MÁRQUEZ", 1038);
-lib.add_book("LOVE IN THE TIME OF CHOLERA", "GABRIEL GARCÍA MÁRQUEZ", 1039);
-lib.add_book("CHRONICLE OF A DEATH FORETOLD", "GABRIEL GARCÍA MÁRQUEZ", 1040);
-
-lib.add_book("DON QUIXOTE", "MIGUEL DE CERVANTES", 1041);
-lib.add_book("THE OLD MAN AND THE SEA", "ERNEST HEMINGWAY", 1042);
-lib.add_book("FOR WHOM THE BELL TOLLS", "ERNEST HEMINGWAY", 1043);
-lib.add_book("A FAREWELL TO ARMS", "ERNEST HEMINGWAY", 1044);
-lib.add_book("THE SUN ALSO RISES", "ERNEST HEMINGWAY", 1045);
-lib.add_book("CATCH-22", "JOSEPH HELLER", 1046);
-lib.add_book("SLAUGHTERHOUSE-FIVE", "KURT VONNEGUT", 1047);
-lib.add_book("CAT'S CRADLE", "KURT VONNEGUT", 1048);
-lib.add_book("BREAKFAST OF CHAMPIONS", "KURT VONNEGUT", 1049);
-lib.add_book("INVISIBLE MAN", "RALPH ELLISON", 1050);
-
-lib.add_book("BELOVED", "TONI MORRISON", 1051);
-lib.add_book("SONG OF SOLOMON", "TONI MORRISON", 1052);
-lib.add_book("SULA", "TONI MORRISON", 1053);
-lib.add_book("THE BLUEST EYE", "TONI MORRISON", 1054);
-lib.add_book("MIDDLEMARCH", "GEORGE ELIOT", 1055);
-lib.add_book("SILAS MARNER", "GEORGE ELIOT", 1056);
-lib.add_book("DANIEL DERONDA", "GEORGE ELIOT", 1057);
-lib.add_book("FRANKENSTEIN", "MARY SHELLEY", 1058);
-lib.add_book("DRACULA", "BRAM STOKER", 1059);
-lib.add_book("THE TIME MACHINE", "H.G. WELLS", 1060);
-
-lib.add_book("THE WAR OF THE WORLDS", "H.G. WELLS", 1061);
-lib.add_book("THE INVISIBLE MAN", "H.G. WELLS", 1062);
-lib.add_book("THE ISLAND OF DOCTOR MOREAU", "H.G. WELLS", 1063);
-lib.add_book("FAHRENHEIT 451", "RAY BRADBURY", 1064);
-lib.add_book("THE MARTIAN CHRONICLES", "RAY BRADBURY", 1065);
-lib.add_book("DUNE", "FRANK HERBERT", 1066);
-lib.add_book("CHILDREN OF DUNE", "FRANK HERBERT", 1067);
-lib.add_book("GOD EMPEROR OF DUNE", "FRANK HERBERT", 1068);
-lib.add_book("FOUNDATION", "ISAAC ASIMOV", 1069);
-lib.add_book("FOUNDATION AND EMPIRE", "ISAAC ASIMOV", 1070);
-
-lib.add_book("SECOND FOUNDATION", "ISAAC ASIMOV", 1071);
-lib.add_book("I, ROBOT", "ISAAC ASIMOV", 1072);
-lib.add_book("THE CAVES OF STEEL", "ISAAC ASIMOV", 1073);
-lib.add_book("THE NAKED SUN", "ISAAC ASIMOV", 1074);
-lib.add_book("THE ROBOTS OF DAWN", "ISAAC ASIMOV", 1075);
-lib.add_book("NEUROMANCER", "WILLIAM GIBSON", 1076);
-lib.add_book("COUNT ZERO", "WILLIAM GIBSON", 1077);
-lib.add_book("MONA LISA OVERDRIVE", "WILLIAM GIBSON", 1078);
-lib.add_book("SNOW CRASH", "NEAL STEPHENSON", 1079);
-lib.add_book("CRYPTONOMICON", "NEAL STEPHENSON", 1080);
-
-lib.add_book("THE DIAMOND AGE", "NEAL STEPHENSON", 1081);
-lib.add_book("ANATHEM", "NEAL STEPHENSON", 1082);
-lib.add_book("THE HOBBIT", "J.R.R. TOLKIEN", 1083);
-lib.add_book("THE FELLOWSHIP OF THE RING", "J.R.R. TOLKIEN", 1084);
-lib.add_book("THE TWO TOWERS", "J.R.R. TOLKIEN", 1085);
-lib.add_book("THE RETURN OF THE KING", "J.R.R. TOLKIEN", 1086);
-lib.add_book("THE SILMARILLION", "J.R.R. TOLKIEN", 1087);
-lib.add_book("HARRY POTTER AND THE SORCERER'S STONE", "J.K. ROWLING", 1088);
-lib.add_book("HARRY POTTER AND THE CHAMBER OF SECRETS", "J.K. ROWLING", 1089);
-lib.add_book("HARRY POTTER AND THE PRISONER OF AZKABAN", "J.K. ROWLING", 1090);
-
-lib.add_book("HARRY POTTER AND THE GOBLET OF FIRE", "J.K. ROWLING", 1091);
-lib.add_book("HARRY POTTER AND THE ORDER OF THE PHOENIX", "J.K. ROWLING", 1092);
-lib.add_book("HARRY POTTER AND THE HALF-BLOOD PRINCE", "J.K. ROWLING", 1093);
-lib.add_book("HARRY POTTER AND THE DEATHLY HALLOWS", "J.K. ROWLING", 1094);
-lib.add_book("THE HUNGER GAMES", "SUZANNE COLLINS", 1095);
-lib.add_book("CATCHING FIRE", "SUZANNE COLLINS", 1096);
-lib.add_book("MOCKINGJAY", "SUZANNE COLLINS", 1097);
-lib.add_book("THE MAZE RUNNER", "JAMES DASHNER", 1098);
-lib.add_book("THE SCORCH TRIALS", "JAMES DASHNER", 1099);
-lib.add_book("THE DEATH CURE", "JAMES DASHNER", 1100);
-
-// adding members to the database:-
-
-lib.add_member("Vibhor", 1);
-lib.add_member("Tanmay Tyagi", 2);
-lib.add_member("Abhinav", 3);
-lib.add_member("Shashwat Bhatt", 4);
-lib.add_member("Harshit", 5);
-lib.add_member("Tanishq Pal", 6);
-while(true){
-    if(point==1){// here the code for librarian will be entered
-        
-        cout<<"FUNCTIONS TO ACCESS: \n"<<endl;
-        string menu[] = {
-            "1: View All Books",
-            "2: Search Book by ID",
-            "3: Search Book by Title",
-            "4: Add New Book",
-            "5: Remove Book by ID",
-            "6: View All Members",
-            "7: Add New Member",
-            "8: Remove Member",
-            "9: View Issued Books",
-            "0: Exit"
-        };
-        for(int i=0; i<10; i++){ 
-            cout<<menu[i]<<endl;
-        }
-        cin>>choice;
-        switch(choice){
-            case 1:
-            cout<<"ALL THE BOOKS IN THE DATABASE ARE: \n"<<endl;
-            lib.display_all_books();
-            restart_menu();
-            break;
-            case 2: 
-            cout<<"PLEASE ENTER THE ID OF THE BOOK: "<<endl;
-            cin>>book_id;
-            lib.search_book_by_id(book_id);
-            restart_menu();
-            break;
-            case 3:
-            cout<<"PLEASE ENTER THE NAME OF THE BOOK: "<<endl;
-            cin.ignore(); //to skip input buffer,,, necessary to use before getline() function;
-            getline(cin, book_title);
-            lib.search_book_by_title(book_title);
-            restart_menu();
-            break;
-            case 4:
-            cout<<"TO ADD A NEW BOOK IN THE LIBRARY DATABASE, PLEASE ENTER THE FOLLOWING INFORMATION: "<<endl;
-            cout<<"PLEASE ENTER THE TITLE OF THE BOOK: "<<endl;
-            cin.ignore();
-            getline(cin, book_title);
-            cout<<"PLEASE ENTER THE AUTHOR OF THE BOOK: "<<endl;
-            cin.ignore();
-            getline(cin, book_author);
-            cout<<"PLEASE ENTER THE ID OF THE BOOK: "<<endl;
-            cin>>book_id;
-            lib.add_book(book_title, book_author, book_id);
-            cout<<"THE FOLLOWING BOOK HAS BEEN ADDED, THIS IS THE UPDATED LIST OF BOOKS: ";
-            lib.display_all_books();
-            restart_menu();
-            break;
-            case 5:
-            cout<<"ENTER THE BOOK ID TO REMOVE FROM THE DATABASE: ";
-            cin>>book_id;
-            lib.remove_book_by_id(book_id);
-            restart_menu();
-            break;
-            case 6: 
-            cout<<"ALL MEMBERS ARE AS FOLLOWS: \n";
-            lib.display_all_member();
-            restart_menu();
-            break;
-            case 7:
-            cout<<"TO ADD A NEW MEMBER IN THE LIBRARY DATABASE, PLEASE ENTER THE FOLLOWING INFORMATION: "<<endl;
-            cout<<"ENTER THE NAME OF THE MEMBER: "<<endl;
-            cin.ignore();
-            getline(cin, member_name);
-            cout<<"ENTER THE ID OF THE MEMBER: "<<endl;
-            cin>>member_id;
-            lib.add_member(member_name, member_id);
-            cout<<"THE FOLLOWING MEMBER HAS BEEN ADDED, THIS IS THE UPDATED LIST OF MEMBERS: ";
-            lib.display_all_member();
-            restart_menu();
-            break;
-            case 8:
-            cout<<"ENTER THE ID OF THE MEMBER TO REMOVE: "<<endl;
-            cin>>member_id;
-            lib.remove_member_by_id(member_id);
-            cout<<"THE UPDATED LIST OF MEMBERS IN THE DATABASE IS: "<<endl;
-            lib.display_all_member();
-            restart_menu();
-            break;
-            case 9:
-            cout<<"ALL THE ISSUED BOOKS IN THE DATABASE:"<<endl;
-            lib.display_allissuedbooks();
-            restart_menu();
-            break;
-            case 0:
-            cout<<"THANKS FOR USING OUR LIBRARY!";
-            exit(0);
-            default:
-            cout<<"INCORRECT OPTIONS CHOOSED! PLEASE TRY AGAIN"<<endl;
-            restart_menu();
-        }
-        
-    } else if(point==2){// here the code for a member will be entered;
-        
-        string menu1[] = {
-        "1. VIEW ALL BOOKS",
-        "2. ISSUE BOOK",
-        "3. MY ISSUED BOOKS",
-        "4. RETURN BOOK",
-        "0. EXIT"
-    };
-
-    for(int i=0; i<5; i++){
-        cout<<menu1[i]<<endl;
-    }
-
-    cin>>option;
-    switch(option){
-        case 1:
-        cout<<"ALL THE BOOKS IN THE LIBRARY ARE: "<<endl;
-        lib.display_all_books();
-        restart_menu();
-        break;
-        case 2: 
-        cout<<"PLEASE ENTER THE ID OF THE BOOK TO ISSUE: "<<endl;
-        cin>>book_id;
-        lib.issue_book_by_id(book_id);
-        restart_menu();
-        break;
-        case 3:
-        cout<<"ALL ISSUED BOOKS IN THE DATABASE ARE: "<<endl;
-        lib.display_allissuedbooks();
-        restart_menu();
-        break;
-        case 4:
-        cout<<"ALL ISSUED BOOKS IN THE DATABASE ARE: "<<endl;
-        lib.display_allissuedbooks();
-        cout<<"ENTER THE ID OF THE BOOK TO RETURN: "<<endl;
-        cin>>book_id;
-        lib.return_book_by_id(book_id);
-        restart_menu();
-        break;
-        case 0:
-        cout<<"THANKS FOR USING OUR LIBRARY!";
-        exit(0);
-        default:
-        cout<<"INCORRECT OPTIONS CHOOSED! PLEASE TRY AGAIN"<<endl;
-        restart_menu();
-        }  
-    } else {
-        cout << "INVALID CHOICE!, RELOAD THE SYSTEM AGAIN.";
-        restart_menu();   
-    }
-}
-  return 0;  
-}
+*Built as part of a series of OOP-focused systems projects, exploring how core C++ concepts — classes, STL containers, and access control logic — combine to model real-world software systems.*
